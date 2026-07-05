@@ -8,3 +8,9 @@ GitPython
 PyGithub
 click
 rich
+langchain
+langchain-openai
+langchain-anthropic
+pydantic
+fastapi
+uvicorn[standard]
