@@ -1,0 +1,40 @@
+# ============================================================
+# SDLC Pipeline - .gitignore
+# ============================================================
+
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets/
+.secrets/
+__pycache__/
+*.py[cod]
+*$py.class
+dist/
+build/
+var/
+*.manifest
+*.spec
+pip-log.txt
+MANIFEST
+.venv/
+venv/
+env/
+ENV/
+.python-version
+pyvenv.cfg
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+.settings/
+*.log
+logs/
+log/
+*.log.*
+debug.log
+npm-debug.log*
+.crewai/

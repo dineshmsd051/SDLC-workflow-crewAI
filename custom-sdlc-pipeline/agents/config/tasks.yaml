@@ -1,0 +1,104 @@
+fetch_requirements_task:
+  description: >
+    Fetch the Jira ticket with ID '{jira_ticket_id}' using the Jira tool.
+    Extract the summary, description, status, issue type, and any
+    acceptance criteria. Then transform this raw ticket content into a
+    structured Technical Specification document containing:
+      - Title
+      - Business Context
+      - Functional Requirements (numbered)
+      - Non-Functional Requirements
+      - Acceptance Criteria
+      - Suggested Affected Areas
+  expected_output: >
+    A markdown-formatted Technical Specification document derived directly
+    from Jira ticket {jira_ticket_id}, ready to hand off to an architect.
+  agent: jira_analyst
+
+analyze_codebase_task:
+  description: >
+    Using the Codebase tools, list all files in the workspace, read the
+    files that are relevant to the Technical Specification produced in
+    the previous task, and produce an Implementation Plan. The plan must
+    enumerate every file to create or modify, the exact change for each,
+    and any new modules, classes, or functions to introduce. Respect the
+    existing project structure and naming conventions.
+  expected_output: >
+    A markdown Implementation Plan with a 'Files to Modify' table
+    (path | change-type | description) and a step-by-step coding strategy.
+  agent: code_architect
+  context:
+    - fetch_requirements_task
+
+implement_code_task:
+  description: >
+    Implement the feature according to the Implementation Plan. For every
+    file listed in the plan, read its current contents (if it exists) using
+    the file reader tool, generate the full new content, and persist it
+    using the file writer tool. Do not output code only in chat; you MUST
+    write files to disk via the tool. Use type hints, docstrings, and
+    proper error handling. After all files are written, return a summary
+    listing each file path you created or modified.
+  expected_output: >
+    A markdown summary listing every file path written to disk along with
+    a one-line description of the change made.
+  agent: developer
+  context:
+    - fetch_requirements_task
+    - analyze_codebase_task
+
+write_tests_task:
+  description: >
+    Write pytest unit tests covering the implementation produced in the
+    previous task. For each new module or function, create a corresponding
+    test file under the tests/ directory (e.g. tests/test_<module>.py).
+    Include tests for happy paths, edge cases, error handling, and mock
+    any external services. Persist all test files via the file writer
+    tool. Aim for >=90% coverage.
+  expected_output: >
+    A markdown summary listing each test file written, the functions
+    covered, and the scenarios tested.
+  agent: test_engineer
+  context:
+    - implement_code_task
+
+review_code_task:
+  description: >
+    Perform a rigorous code review of every file written in the previous
+    two tasks. Read each file from disk using the file reader tool. Assess:
+      1. Correctness vs. the Technical Specification
+      2. Security (input validation, secrets, injection)
+      3. Performance (algorithmic complexity, I/O patterns)
+      4. Readability and adherence to PEP-8
+      5. Test coverage and test quality
+    Produce a structured review report with severity tags (BLOCKER,
+    MAJOR, MINOR, NIT) and a final verdict: APPROVED or CHANGES_REQUESTED.
+  expected_output: >
+    A markdown Code Review Report ending with an explicit final verdict
+    line: 'FINAL VERDICT: APPROVED' or 'FINAL VERDICT: CHANGES_REQUESTED'.
+  agent: code_reviewer
+  context:
+    - implement_code_task
+    - write_tests_task
+
+git_automation_task:
+  description: >
+    Using the Git/GitHub tools, perform the following operations in order:
+      1. Create (or checkout if exists) a local branch named
+         'feature/{jira_ticket_id}'.
+      2. Stage and commit all modified and newly created files with the
+         message: '{jira_ticket_id}: <short summary from spec>'.
+      3. Push the branch to origin.
+      4. Open a Pull Request on GitHub against the 'main' branch with a
+         title '[{jira_ticket_id}] <summary>' and a body that embeds the
+         Technical Specification and Code Review Report.
+    Return the PR URL at the end.
+  expected_output: >
+    A markdown report containing the branch name, commit SHA, push status,
+    and the final Pull Request URL.
+  agent: devops_manager
+  context:
+    - fetch_requirements_task
+    - implement_code_task
+    - write_tests_task
+    - review_code_task
